@@ -38,8 +38,6 @@
 
 @end
 
-
-
 @implementation XAuthTwitterEngine
 
 @synthesize accessTokenURL = _accessTokenURL;
@@ -48,27 +46,33 @@
 @synthesize operationQueue = _operationQueue;
 
 - (void) dealloc {
+	
 	self.accessTokenURL = nil;
 	
-	[self.operationQueue cancelAllOperations];
-	[self.operationQueue release];	
+	[_operationQueue cancelAllOperations];
+	[_operationQueue release];
 	
 	[_accessToken release];
 	[_consumer release];
+	
 	[super dealloc];
 }
 
 
-+ (XAuthTwitterEngine *) XAuthTwitterEngineWithDelegate: (NSObject *) delegate {
++ (XAuthTwitterEngine *) XAuthTwitterEngineWithDelegate:(NSObject *) delegate {
+	
     return [[[XAuthTwitterEngine alloc] initXAuthWithDelegate: delegate] autorelease];
 }
 
 
-- (XAuthTwitterEngine *) initXAuthWithDelegate: (NSObject *) delegate {
-    if (self = (id) [super initWithDelegate: delegate]) {
+- (XAuthTwitterEngine *)initXAuthWithDelegate:(NSObject *)delegate {
+	
+    if (self = (id)[super initWithDelegate: delegate]) {
+		
 		self.accessTokenURL = [NSURL URLWithString: @"http://twitter.com/oauth/access_token"];
-		self.operationQueue = [[NSOperationQueue alloc] init];
+		_operationQueue = [[NSOperationQueue alloc] init];
 	}
+	
     return self;
 }
 
@@ -79,15 +83,19 @@
 	return _consumer != nil;
 }
 
-- (OAConsumer *) consumer {
-	if (_consumer) return _consumer;
+- (OAConsumer *)consumer {
+	
+	if (_consumer)
+		return _consumer;
 	
 	NSAssert(self.consumerKey.length > 0 && self.consumerSecret.length > 0, @"You must first set your Consumer Key and Consumer Secret properties. Visit http://twitter.com/oauth_clients/new to obtain these.");
 	_consumer = [[OAConsumer alloc] initWithKey: self.consumerKey secret: self.consumerSecret];
+	
 	return _consumer;
 }
 
 - (BOOL) isAuthorized {	
+	
 	if (_accessToken.key && _accessToken.secret) return YES;
 	
 	//first, check for cached creds
@@ -102,6 +110,7 @@
 	
 	[_accessToken release];										// no access token found.  create a new empty one
 	_accessToken = [[OAToken alloc] initWithKey: nil secret: nil];
+	
 	return NO;
 }
 
@@ -114,7 +123,8 @@
 */
 
 
-- (void) clearAccessToken {
+- (void)clearAccessToken {
+	
 	if ([_delegate respondsToSelector: @selector(storeCachedTwitterXAuthAccessTokenString:forUsername:)]) [(id) _delegate storeCachedTwitterXAuthAccessTokenString: @"" forUsername: self.username];
 	[_accessToken release];
 	_accessToken = nil;
@@ -181,7 +191,6 @@
 	
 }
 
-
 #pragma mark -
 #pragma mark Private XAuth methods
 
@@ -192,7 +201,6 @@
 - (void) accessTokenTicket:(OAServiceTicket *)ticket didFailWithError:(NSError *) error {
 	if ([_delegate respondsToSelector: @selector(twitterXAuthConnectionDidFailWithError:)]) [(id) _delegate twitterXAuthConnectionDidFailWithError: error];	
 }
-
 
 //
 // access token callback
@@ -211,18 +219,23 @@
 }
 */
 
-- (NSString *) extractUsernameFromHTTPBody: (NSString *) body {
-	if (!body) return nil;
+- (NSString *)extractUsernameFromHTTPBody:(NSString *)body {
 	
-	NSArray					*tuples = [body componentsSeparatedByString: @"&"];
-	if (tuples.count < 1) return nil;
+	if (!body)
+		return nil;
+	
+	NSArray	*tuples = [body componentsSeparatedByString: @"&"];
+	if (tuples.count < 1)
+		return nil;
 	
 	for (NSString *tuple in tuples) {
+		
 		NSArray *keyValueArray = [tuple componentsSeparatedByString: @"="];
 		
 		if (keyValueArray.count == 2) {
-			NSString				*key = [keyValueArray objectAtIndex: 0];
-			NSString				*value = [keyValueArray objectAtIndex: 1];
+			
+			NSString *key = [keyValueArray objectAtIndex: 0];
+			NSString *value = [keyValueArray objectAtIndex: 1];
 			
 			if ([key isEqualToString:@"screen_name"]) return value;
 		}
@@ -255,8 +268,8 @@
                      queryParameters:(NSDictionary *)params 
                                 body:(NSString *)body 
                          requestType:(MGTwitterRequestType)requestType 
-                        responseType:(MGTwitterResponseType)responseType
-{
+                        responseType:(MGTwitterResponseType)responseType {
+	
     NSString *fullPath = path;
 	
 	// --------------------------------------------------------------------------------
@@ -344,8 +357,11 @@
                                                         responseType:responseType];
     
     if (!connection) {
+		
         return nil;
+		
     } else {
+		
         [_connections setObject:connection forKey:[connection identifier]];
         [connection release];
     }
@@ -353,10 +369,8 @@
     return [connection identifier];
 }
 
-
 - (void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
 {
-	
 	// --------------------------------------------------------------------------------
 	// modificaiton from the base clase
 	// instead of answering the authentication challenge, we just ignore it.
@@ -374,7 +388,6 @@
 	
 	[[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
 	return;
-	
 }
 
 @end
