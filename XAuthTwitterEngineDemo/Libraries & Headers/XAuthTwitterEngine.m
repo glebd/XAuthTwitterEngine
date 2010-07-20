@@ -269,7 +269,7 @@
                                 body:(NSString *)body 
                          requestType:(MGTwitterRequestType)requestType 
                         responseType:(MGTwitterResponseType)responseType {
-	
+    
     NSString *fullPath = path;
 	
 	// --------------------------------------------------------------------------------
@@ -294,7 +294,7 @@
 	// Note: This will result in the delegate callback for the cached request token
 	// ===== to be called if it doesn't already exist.
 	//
-	if (![self isAuthorized])
+	if (requestType != MGTwitterPublicTimelineRequest && ![self isAuthorized])
 	{
 		return nil;
 	}
