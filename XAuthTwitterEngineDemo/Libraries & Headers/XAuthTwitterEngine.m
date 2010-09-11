@@ -96,12 +96,10 @@
 
 - (BOOL) isAuthorized {	
 	
-	if (_accessToken.key && _accessToken.secret) return YES;
-	
 	//first, check for cached creds
-	NSString *accessTokenString = [_delegate respondsToSelector: @selector(cachedTwitterXAuthAccessTokenStringForUsername:)] ? [(id) _delegate cachedTwitterXAuthAccessTokenStringForUsername: self.username] : @"";
+	NSString *accessTokenString = [_delegate respondsToSelector:@selector(cachedTwitterXAuthAccessTokenStringForUsername:)] ? [(id) _delegate cachedTwitterXAuthAccessTokenStringForUsername:self.username] : @"";
 	
-	if (accessTokenString.length) {				
+	if (accessTokenString.length) {
 		[_accessToken release];
 		_accessToken = [[OAToken alloc] initWithHTTPResponseBody: accessTokenString];
 		[self setUsername: [self extractUsernameFromHTTPBody: accessTokenString] password: nil];
