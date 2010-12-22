@@ -1,12 +1,12 @@
 //
 //  XAuthTwitterEngine.h
-//  
+//
 //  Created by Aral Balkan on 28/02/2010.
 //  Copyright 2010 Naklab. All rights reserved.
 //
 //  Based on SA_OAuthTwitterEngine Ben Gottlieb.
 //
-//  Some code and concepts taken from examples provided by 
+//  Some code and concepts taken from examples provided by
 //  Matt Gemmell, Chris Kimpton, and Isaiah Carew
 //  See ReadMe for further attributions, copyrights and license info.
 //
@@ -46,33 +46,33 @@
 @synthesize operationQueue = _operationQueue;
 
 - (void) dealloc {
-	
+
 	self.accessTokenURL = nil;
-	
+
 	[_operationQueue cancelAllOperations];
 	[_operationQueue release];
-	
+
 	[_accessToken release];
 	[_consumer release];
-	
+
 	[super dealloc];
 }
 
 
 + (XAuthTwitterEngine *) XAuthTwitterEngineWithDelegate:(NSObject *) delegate {
-	
+
     return [[[XAuthTwitterEngine alloc] initXAuthWithDelegate: delegate] autorelease];
 }
 
 
 - (XAuthTwitterEngine *)initXAuthWithDelegate:(NSObject *)delegate {
-	
+
     if (self = (id)[super initWithDelegate: delegate]) {
-		
+
 		self.accessTokenURL = [NSURL URLWithString: @"http://twitter.com/oauth/access_token"];
 		_operationQueue = [[NSOperationQueue alloc] init];
 	}
-	
+
     return self;
 }
 
@@ -84,31 +84,31 @@
 }
 
 - (OAConsumer *)consumer {
-	
+
 	if (_consumer)
 		return _consumer;
-	
+
 	NSAssert(self.consumerKey.length > 0 && self.consumerSecret.length > 0, @"You must first set your Consumer Key and Consumer Secret properties. Visit http://twitter.com/oauth_clients/new to obtain these.");
 	_consumer = [[OAConsumer alloc] initWithKey: self.consumerKey secret: self.consumerSecret];
-	
+
 	return _consumer;
 }
 
-- (BOOL) isAuthorized {	
-	
+- (BOOL) isAuthorized {
+
 	//first, check for cached creds
 	NSString *accessTokenString = [_delegate respondsToSelector:@selector(cachedTwitterXAuthAccessTokenStringForUsername:)] ? [(id) _delegate cachedTwitterXAuthAccessTokenStringForUsername:self.username] : @"";
-	
+
 	if (accessTokenString.length) {
 		[_accessToken release];
 		_accessToken = [[OAToken alloc] initWithHTTPResponseBody: accessTokenString];
 		[self setUsername: [self extractUsernameFromHTTPBody: accessTokenString] password: nil];
 		if (_accessToken.key && _accessToken.secret) return YES;
 	}
-	
+
 	[_accessToken release];										// no access token found.  create a new empty one
 	_accessToken = [[OAToken alloc] initWithKey: nil secret: nil];
-	
+
 	return NO;
 }
 
@@ -122,7 +122,7 @@
 
 
 - (void)clearAccessToken {
-	
+
 	if ([_delegate respondsToSelector: @selector(storeCachedTwitterXAuthAccessTokenString:forUsername:)]) [(id) _delegate storeCachedTwitterXAuthAccessTokenString: @"" forUsername: self.username];
 	[_accessToken release];
 	_accessToken = nil;
@@ -134,7 +134,7 @@
 - (void) setPin: (NSString *) pin {
 	[_pin autorelease];
 	_pin = [pin retain];
-	
+
 	_accessToken.pin = pin;
 	_requestToken.pin = pin;
 }
@@ -144,16 +144,16 @@
 #pragma mark Public xAuth methods
 
 //
-// Attempts to retrieve an xAuthAccessToken for the passed username and password 
+// Attempts to retrieve an xAuthAccessToken for the passed username and password
 //
 -(void)exchangeAccessTokenForUsername:(NSString *)username password:(NSString *)password
 {
-	// 
+	//
 	// Doing this as an operation that uses the synchronous OADataFetcher instead of using
 	// the asynchronous OAAsynchronousDataFetcher since the latter doesn't fire the
 	// fail handler when the credential exchange fails with Twitter for some reason.
 	// Other (non-twitter errors) fire, so I guess something is messed up when the class
-	// is used with Twitter's xAuth implementation. Oh well... 
+	// is used with Twitter's xAuth implementation. Oh well...
 	//
 	ExchangeCredentialsOperation *exchangeCredentialsOperation = [[ExchangeCredentialsOperation alloc] init];
 	exchangeCredentialsOperation.username = username;
@@ -177,16 +177,16 @@
 //
 - (void)setAccessTokenFromTokenString:(NSString *)tokenString
 {
-	NSString *username = [self extractUsernameFromHTTPBody:tokenString];	
-	
+	NSString *username = [self extractUsernameFromHTTPBody:tokenString];
+
 	if (username.length > 0) {
 		[self setUsername: username password: nil];
 		if ([_delegate respondsToSelector: @selector(storeCachedTwitterXAuthAccessTokenString:forUsername:)]) [(id) _delegate storeCachedTwitterXAuthAccessTokenString: tokenString forUsername: username];
 	}
-	
+
 	[_accessToken release];
 	_accessToken = [[OAToken alloc] initWithHTTPResponseBody:tokenString];
-	
+
 }
 
 #pragma mark -
@@ -197,7 +197,7 @@
 //
 
 - (void) accessTokenTicket:(OAServiceTicket *)ticket didFailWithError:(NSError *) error {
-	if ([_delegate respondsToSelector: @selector(twitterXAuthConnectionDidFailWithError:)]) [(id) _delegate twitterXAuthConnectionDidFailWithError: error];	
+	if ([_delegate respondsToSelector: @selector(twitterXAuthConnectionDidFailWithError:)]) [(id) _delegate twitterXAuthConnectionDidFailWithError: error];
 }
 
 //
@@ -208,37 +208,37 @@
 /*
 - (void) setAccessToken: (OAServiceTicket *) ticket withData: (NSData *) data {
 	if (!ticket.didSucceed || !data) return;
-	
+
 	NSString *dataString = [[[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding] autorelease];
 	if (!dataString) return;
 
 	[self setAccessTokenFromTokenString:dataString];
-	
+
 }
 */
 
 - (NSString *)extractUsernameFromHTTPBody:(NSString *)body {
-	
+
 	if (!body)
 		return nil;
-	
+
 	NSArray	*tuples = [body componentsSeparatedByString: @"&"];
 	if (tuples.count < 1)
 		return nil;
-	
+
 	for (NSString *tuple in tuples) {
-		
+
 		NSArray *keyValueArray = [tuple componentsSeparatedByString: @"="];
-		
+
 		if (keyValueArray.count == 2) {
-			
+
 			NSString *key = [keyValueArray objectAtIndex: 0];
 			NSString *value = [keyValueArray objectAtIndex: 1];
-			
+
 			if ([key isEqualToString:@"screen_name"]) return value;
 		}
 	}
-	
+
 	return nil;
 }
 
@@ -252,37 +252,37 @@
 // did.  i've chosen to subclass instead of directly modifying the
 // MGTwitterEngine as it makes integrating MGTwitterEngine changes a bit
 // easier.
-// 
+//
 // the code here is largely unchanged from chris's implimentation.
-// i've tried to highlight the areas that differ from 
+// i've tried to highlight the areas that differ from
 // the base class implimentation.
 //
 // --------------------------------------------------------------------------------
 
 #define SET_AUTHORIZATION_IN_HEADER 1
 
-- (NSString *)_sendRequestWithMethod:(NSString *)method 
-                                path:(NSString *)path 
-                     queryParameters:(NSDictionary *)params 
-                                body:(NSString *)body 
-                         requestType:(MGTwitterRequestType)requestType 
+- (NSString *)_sendRequestWithMethod:(NSString *)method
+                                path:(NSString *)path
+                     queryParameters:(NSDictionary *)params
+                                body:(NSString *)body
+                         requestType:(MGTwitterRequestType)requestType
                         responseType:(MGTwitterResponseType)responseType {
-    
+
     NSString *fullPath = path;
-	
+
     if (params)
     {
         fullPath = [self _queryStringWithBase:fullPath parameters:params prefixed:YES];
     }
-	
-    NSString *urlString = [NSString stringWithFormat:@"%@://%@/%@", 
+
+    NSString *urlString = [NSString stringWithFormat:@"%@://%@/%@",
                            (_secureConnection) ? @"https" : @"http",
                            _APIDomain, fullPath];
     NSURL *finalURL = [NSURL URLWithString:urlString];
     if (!finalURL) {
         return nil;
     }
-	
+
 	//
 	// Check if we're authorized. If not don't carry out the request.
 	// Note: This will result in the delegate callback for the cached request token
@@ -292,32 +292,31 @@
 	{
 		return nil;
 	}
-	
+
 	// --------------------------------------------------------------------------------
 	// modificaiton from the base clase
 	// the base class creates a regular url request
 	// we're going to create an oauth url request
 	// --------------------------------------------------------------------------------
-	//    NSMutableURLRequest *theRequest = [NSMutableURLRequest requestWithURL:finalURL 
-	//                                                              cachePolicy:NSURLRequestReloadIgnoringCacheData 
+	//    NSMutableURLRequest *theRequest = [NSMutableURLRequest requestWithURL:finalURL
+	//                                                              cachePolicy:NSURLRequestReloadIgnoringCacheData
 	//                                                          timeoutInterval:URL_REQUEST_TIMEOUT];
 	// --------------------------------------------------------------------------------
-	NSLog(@"About to carry out request with access token: %@", _accessToken);
 	OAMutableURLRequest *theRequest = [[[OAMutableURLRequest alloc] initWithURL:finalURL
-																	   consumer:self.consumer 
-																		  token:_accessToken 
+																	   consumer:self.consumer
+																		  token:_accessToken
 																		  realm: nil
 															  signatureProvider:nil] autorelease];
     if (method) {
         [theRequest setHTTPMethod:method];
     }
     [theRequest setHTTPShouldHandleCookies:NO];
-    
+
     // Set headers for client information, for tracking purposes at Twitter.
     [theRequest setValue:_clientName    forHTTPHeaderField:@"X-Twitter-Client"];
     [theRequest setValue:_clientVersion forHTTPHeaderField:@"X-Twitter-Client-Version"];
     [theRequest setValue:_clientURL     forHTTPHeaderField:@"X-Twitter-Client-URL"];
-    
+
     // Set the request body if this is a POST request.
     BOOL isPOST = (method && [method isEqualToString:@"POST"]);
     if (isPOST) {
@@ -327,39 +326,39 @@
 			finalBody = [finalBody stringByAppendingString:body];
 		}
         if (_clientSourceToken) {
-            finalBody = [finalBody stringByAppendingString:[NSString stringWithFormat:@"%@source=%@", 
-                                                            (body) ? @"&" : @"?" , 
+            finalBody = [finalBody stringByAppendingString:[NSString stringWithFormat:@"%@source=%@",
+                                                            (body) ? @"&" : @"?" ,
                                                             _clientSourceToken]];
         }
-        
+
         if (finalBody) {
             [theRequest setHTTPBody:[finalBody dataUsingEncoding:NSUTF8StringEncoding]];
         }
     }
-	
+
 	// --------------------------------------------------------------------------------
 	// modificaiton from the base clase
 	// our version "prepares" the oauth url request
 	// --------------------------------------------------------------------------------
 	[theRequest prepare];
-    // Create a connection using this request, with the default timeout and caching policy, 
+    // Create a connection using this request, with the default timeout and caching policy,
     // and appropriate Twitter request and response types for parsing and error reporting.
     MGTwitterHTTPURLConnection *connection;
-    connection = [[MGTwitterHTTPURLConnection alloc] initWithRequest:theRequest 
-                                                            delegate:self 
-                                                         requestType:requestType 
+    connection = [[MGTwitterHTTPURLConnection alloc] initWithRequest:theRequest
+                                                            delegate:self
+                                                         requestType:requestType
                                                         responseType:responseType];
-    
+
     if (!connection) {
-		
+
         return nil;
-		
+
     } else {
-		
+
         [_connections setObject:connection forKey:[connection identifier]];
         [connection release];
     }
-    
+
     return [connection identifier];
 }
 
@@ -372,14 +371,14 @@
 	// so i'm rolling with it.
 	// --------------------------------------------------------------------------------
 	//	if ([challenge previousFailureCount] == 0 && ![challenge proposedCredential]) {
-	//		NSURLCredential *credential = [NSURLCredential credentialWithUser:_username password:_password 
+	//		NSURLCredential *credential = [NSURLCredential credentialWithUser:_username password:_password
 	//															  persistence:NSURLCredentialPersistenceForSession];
 	//		[[challenge sender] useCredential:credential forAuthenticationChallenge:challenge];
 	//	} else {
 	//		[[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
 	//	}
 	// --------------------------------------------------------------------------------
-	
+
 	[[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
 	return;
 }
